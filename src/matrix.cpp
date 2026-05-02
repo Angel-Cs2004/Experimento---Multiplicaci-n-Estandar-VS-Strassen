@@ -9,6 +9,24 @@ Matrix generateMatrix(int n, std::mt19937 &rng) {
   return M;
 }
 
+Matrix addMat(const Matrix &A, const Matrix &B) {
+  int n = A.size();
+  Matrix C(n, std::vector<double>(n));
+  for (int i = 0; i < n; i++)
+    for (int j = 0; j < n; j++)
+      C[i][j] = A[i][j] + B[i][j];
+  return C;
+}
+
+Matrix subMat(const Matrix &A, const Matrix &B) {
+  int n = A.size();
+  Matrix C(n, std::vector<double>(n));
+  for (int i = 0; i < n; i++)
+    for (int j = 0; j < n; j++)
+      C[i][j] = A[i][j] - B[i][j];
+  return C;
+}
+
 Matrix getSubmatrix(const Matrix &M, int rowStart, int colStart, int size) {
   Matrix sub(size, std::vector<double>(size));
   for (int i = 0; i < size; i++)
