@@ -41,3 +41,20 @@ void setSubmatrix(Matrix &dst, const Matrix &src, int rowStart, int colStart) {
     for (int j = 0; j < size; j++)
       dst[rowStart + i][colStart + j] = src[i][j];
 }
+
+Matrix padMatrix(const Matrix &M, int m) {
+  int n = M.size();
+  Matrix P(m, std::vector<double>(m, 0.0));
+  for (int i = 0; i < n; i++)
+    for (int j = 0; j < n; j++)
+      P[i][j] = M[i][j];
+  return P;
+}
+
+Matrix unpadMatrix(const Matrix &M, int n) {
+  Matrix R(n, std::vector<double>(n));
+  for (int i = 0; i < n; i++)
+    for (int j = 0; j < n; j++)
+      R[i][j] = M[i][j];
+  return R;
+}
