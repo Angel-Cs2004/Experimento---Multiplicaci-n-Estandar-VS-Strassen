@@ -1,0 +1,7 @@
+*.o
+
+# Generated benchmark output
+data/resultados.dat
+
+# Generated plots
+plots/matmul_analysis.png
