@@ -1,4 +1,3 @@
-
 #include "../include/benchmark.h"
 #include <iomanip>
 #include <iostream>

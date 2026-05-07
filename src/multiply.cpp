@@ -11,14 +11,20 @@ Matrix standardMul(const Matrix &A, const Matrix &B) {
         C[i][j] += A[i][k] * B[k][j];
   return C;
 }
+
 Matrix strassenMul(const Matrix &A, const Matrix &B) {
   int n = A.size();
 
   if (n <= BASE)
     return standardMul(A, B);
 
+  if (n % 2 != 0) {
+    int m = n + 1;
+    return unpadMatrix(strassenMul(padMatrix(A, m), padMatrix(B, m)), n);
+  }
+
   int half = n / 2;
-  // futura implementacion de la separacion de cuadrantes
+
   Matrix A11 = getSubmatrix(A, 0, 0, half);
   Matrix A12 = getSubmatrix(A, 0, half, half);
   Matrix A21 = getSubmatrix(A, half, 0, half);
@@ -28,7 +34,7 @@ Matrix strassenMul(const Matrix &A, const Matrix &B) {
   Matrix B12 = getSubmatrix(B, 0, half, half);
   Matrix B21 = getSubmatrix(B, half, 0, half);
   Matrix B22 = getSubmatrix(B, half, half, half);
-  // aplicacion de las 7 productos y 18 sumas
+
   Matrix P1 = strassenMul(A11, subMat(B12, B22));
   Matrix P2 = strassenMul(addMat(A11, A12), B22);
   Matrix P3 = strassenMul(addMat(A21, A22), B11);
@@ -43,7 +49,6 @@ Matrix strassenMul(const Matrix &A, const Matrix &B) {
   Matrix C22 = subMat(subMat(addMat(P5, P1), P3), P7);
 
   Matrix C(n, std::vector<double>(n, 0.0));
-
   setSubmatrix(C, C11, 0, 0);
   setSubmatrix(C, C12, 0, half);
   setSubmatrix(C, C21, half, 0);

@@ -1,4 +1,3 @@
-
 #include "../include/benchmark.h"
 #include "../include/multiply.h"
 #include <algorithm>
