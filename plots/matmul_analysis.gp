@@ -8,10 +8,12 @@ set grid lw 1 lt 0 lc rgb "#CCCCCC"
 set border lw 1.5
 set key top left box
 set logscale x 2
-set xtics (4, 8, 16, 32, 64, 128, 256, 512)
+set xtics (4, 8, 16, 32, 64, 128, 256, 512,640,768,1024)
 set format x "%g"
 set arrow from 32, graph 0 to 32, graph 1 nohead lw 2 lt 2 lc rgb "red" dashtype 2
-set label "n = 32\n(umbral)" at 33, graph 0.9 font "Arial,10" tc rgb "red"
+set label "n₀ = 32\n(teórico)" at 33, graph 0.9 font "Arial,10" tc rgb "red"
+set arrow 2 from 256, graph 0 to 256, graph 1 nohead lw 2 lt 2 lc rgb "purple" dashtype 2
+set label 2 "n₀ = 256\n(real)" at 265, graph 0.82 font "Arial,10" tc rgb "purple"
 set yrange [0:*]
 
 plot "../data/resultados.dat" using 1:2 with linespoints \
