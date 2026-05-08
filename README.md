@@ -8,22 +8,20 @@ El objetivo del experimento es determinar empíricamente el valor N₀ a partir 
 
 ## ¿Qué hace este proyecto?
 
-El benchmark ejecuta ambos algoritmos sobre matrices cuadradas de tamaño n ∈ {4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, 512}, midiendo el tiempo de ejecución con `std::chrono::high_resolution_clock`. Para reducir el ruido del sistema operativo, cada tamaño se repite 10 veces y se reporta la **mediana** (no la media), lo que elimina el efecto de picos aislados por interrupciones del scheduler.
+El benchmark ejecuta ambos algoritmos sobre matrices cuadradas de tamaño n ∈ {4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, 512, 640, 768, 1024}, midiendo el tiempo de ejecución con `std::chrono::high_resolution_clock`. Para reducir el ruido del sistema operativo, cada tamaño se repite 10 veces y se reporta la **mediana**, lo que elimina el efecto de picos aislados por interrupciones del scheduler.
 
-Las matrices de entrada se generan con `std::mt19937` usando semilla fija (42), garantizando que el experimento sea completamente reproducible: cualquier persona que ejecute el código obtendrá exactamente las mismas matrices y, en el mismo hardware, los mismos tiempos.
-
-Los resultados obtenidos muestran que el N₀ empírico de esta implementación es aproximadamente **n = 256**, significativamente mayor que el valor teórico, debido principalmente al overhead de alocaciones dinámicas y la pérdida de localidad de caché en la recursión de Strassen.
+Las matrices se generan con `std::mt19937` usando semilla fija (42), garantizando que el experimento sea completamente reproducible: cualquier persona que ejecute el código obtendrá exactamente las mismas matrices y, en el mismo hardware, los mismos tiempos.
 
 ---
 
 ## Algoritmos implementados
 
-**Multiplicación estándar** — Triple bucle clásico ijk con complejidad O(n³). Accede a la memoria de forma secuencial, lo que favorece la localidad de caché y permite al compilador vectorizar el bucle automáticamente con instrucciones SIMD cuando se compila con `-O2`.
+**Multiplicación estándar** — Triple bucle clásico ijk con complejidad O(n³). Accede a la memoria de forma secuencial, lo que favorece la localidad de caché y permite al compilador vectorizar el bucle con instrucciones SIMD al compilar con `-O2`.
 
-**Algoritmo de Strassen** — Implementación recursiva que divide cada matriz en 4 subcuadrantes de tamaño n/2 y calcula 7 productos recursivos (P1–P7) en lugar de los 8 del método estándar, reduciendo la complejidad teórica a O(n^2.807). Dos decisiones de implementación importantes:
+**Algoritmo de Strassen** — Implementación recursiva que divide cada matriz en 4 subcuadrantes de tamaño n/2 y calcula 7 productos recursivos (P1–P7) en lugar de los 8 del método estándar, reduciendo la complejidad teórica a O(n^2.807). Dos decisiones de implementación clave:
 
-- **Caso base (BASE = 32):** cuando el subproblema llega a n ≤ 32, se invoca directamente la multiplicación estándar en lugar de continuar recursando. Esto evita el overhead de decenas de niveles de recursión adicionales sobre matrices pequeñas donde el triple bucle es más eficiente.
-- **Padding para n impar:** si n no es divisible entre 2, la matriz se expande en 1 fila y columna (rellena con ceros) antes de recursar, y se recorta al tamaño original al finalizar. Esto garantiza que la división en cuadrantes siempre sea exacta.
+- **Caso base (BASE = 32):** cuando el subproblema llega a n ≤ 32 se invoca directamente la multiplicación estándar. Recursar hasta 1×1 generaría un overhead de alocaciones dinámicas tan grande que destruiría cualquier ventaja del algoritmo.
+- **Padding para n impar:** si n no es divisible entre 2, la matriz se expande en 1 fila y columna (rellena con ceros) antes de recursar y se recorta al finalizar, garantizando que la división en cuadrantes siempre sea exacta.
 
 ---
 
@@ -46,13 +44,12 @@ Los resultados se guardan en `data/resultados.dat` con el formato:
 
 ```
 # n  t_standard_ms  t_strassen_ms
-4    0.000167       0.000166
-8    0.000803       0.000736
+4    0.000215       0.000281
 ...
-512  112.193867     62.148612
+1024  1031.798862   431.180454
 ```
 
-El gráfico comparativo se genera automáticamente en `plots/matmul_analysis.png`.
+El gráfico comparativo se genera en `plots/matmul_analysis.png`.
 
 ---
 
@@ -60,9 +57,9 @@ El gráfico comparativo se genera automáticamente en `plots/matmul_analysis.png
 
 ```
 ├── src/
-│   ├── main.cpp        # Sweep de tamaños, salida de resultados a stdout y stderr
-│   ├── matrix.cpp      # Generación de matrices, operaciones (add, sub, get, set, pad, unpad)
-│   ├── multiply.cpp    # Multiplicación estándar y Strassen con caso base y padding
+│   ├── main.cpp        # Sweep de tamaños, salida de resultados
+│   ├── matrix.cpp      # Generación, operaciones y padding de matrices
+│   ├── multiply.cpp    # Multiplicación estándar y Strassen (BASE=32)
 │   └── benchmark.cpp   # Medición por mediana sobre 10 repeticiones
 ├── include/
 │   ├── matrix.h
@@ -81,14 +78,18 @@ El gráfico comparativo se genera automáticamente en `plots/matmul_analysis.png
 
 | n | Estándar (ms) | Strassen (ms) | Ventaja |
 |---|---|---|---|
-| 32 | 0.025804 | 0.024056 | Strassen ✓ (caso base activo) |
-| 64 | 0.125275 | 0.166518 | Estándar |
-| 128 | 1.008653 | 1.145424 | Estándar |
-| 256 | 9.937449 | 8.497127 | **Strassen ✓ (primer cruce real)** |
-| 384 | 39.212694 | 33.006082 | Strassen ✓ |
-| 512 | 112.193867 | 62.148612 | **Strassen ✓ (~44% más rápido)** |
+| 32 | 0.036164 | 0.037446 | Estándar |
+| 64 | 0.114055 | 0.152819 | Estándar |
+| 128 | 1.014752 | 1.151118 | Estándar |
+| 256 | 9.019338 | 8.461906 | **Strassen ✓ (primer cruce)** |
+| 320 | 19.696552 | 22.462786 | Estándar (retroceso temporal) |
+| 384 | 37.554021 | 31.677285 | **Strassen ✓ (ventaja consolidada)** |
+| 512 | 110.189120 | 59.398621 | Strassen ✓ (46% más rápido) |
+| 640 | 234.461274 | 160.056181 | Strassen ✓ (32% más rápido) |
+| 768 | 412.217170 | 232.357019 | Strassen ✓ (44% más rápido) |
+| 1024 | 1031.798862 | 431.180454 | **Strassen ✓ (58% más rápido)** |
 
-El cruce no es abrupto: en n = 320 el estándar recupera brevemente la ventaja, confirmando que N₀ ≈ 256 es el inicio de una transición gradual, no un punto de quiebre instantáneo.
+El cruce no es abrupto: en n=320 el estándar recupera brevemente la ventaja tras el primer cruce en n=256, confirmando que N₀ ≈ 256 marca el inicio de una transición gradual. A partir de n=384 la ventaja de Strassen se consolida definitivamente, alcanzando un 58% de mejora en n=1024.
 
 ---
 
